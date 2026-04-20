@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String?
+  avatarUrl String?
+
+  createdAt DateTime @default(now())
+
+  accounts  Account[]
+  feedbacks Feedback[]
+  comments  Comment[]
+  votes     Vote[]
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  provider          Provider
+  providerAccountId String
+
+  username  String?
+  avatarUrl String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+enum Provider {
+  DISCORD
+  ROBLOX
+  LOCAL
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+
+  status    Status   @default(OPEN)
+  order     Float    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id])
+
+  votes     Vote[]
+  comments  Comment[]
+
+  tags      FeedbackTag[]
+}
+
+enum Status {
+  OPEN
+  PLANNED
+  IN_PROGRESS
+  DONE
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  content    String
+  createdAt  DateTime @default(now())
+
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id])
+}
+
+model Vote {
+  id         String @id @default(cuid())
+
+  userId     String
+  feedbackId String
+
+  user     User     @relation(fields: [userId], references: [id])
+  feedback Feedback @relation(fields: [feedbackId], references: [id])
+
+  @@unique([userId, feedbackId])
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String?
+
+  feedbacks FeedbackTag[]
+}
+
+model FeedbackTag {
+  feedbackId String
+  tagId      String
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id])
+  tag      Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([feedbackId, tagId])
+}
